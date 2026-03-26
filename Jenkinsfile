@@ -4,7 +4,6 @@ pipeline {
   environment {
     IMAGE_NAME = "frontend-repo:latest"
     CONTAINER_NAME = "frontend-repo-container"
-    SLACK_WEBHOOK_URL = credentials('frontend-slack-webhook')
   }
 
   stages {
@@ -44,18 +43,30 @@ pipeline {
 
   post {
     success {
-      sh '''
-        curl -X POST -H "Content-type: application/json" \
-        --data '{"text":"Frontend pipeline succeeded."}' \
-        $SLACK_WEBHOOK_URL
-      '''
+      script {
+        node(null) {
+          withCredentials([string(credentialsId: 'frontend-slack-webhook', variable: 'SLACK_URL')]) {
+            sh '''
+              curl -sS -X POST -H "Content-type: application/json" \
+                --data '{"text":"Frontend pipeline succeeded."}' \
+                "$SLACK_URL"
+            '''
+          }
+        }
+      }
     }
     failure {
-      sh '''
-        curl -X POST -H "Content-type: application/json" \
-        --data '{"text":"Frontend pipeline failed."}' \
-        $SLACK_WEBHOOK_URL
-      '''
+      script {
+        node(null) {
+          withCredentials([string(credentialsId: 'frontend-slack-webhook', variable: 'SLACK_URL')]) {
+            sh '''
+              curl -sS -X POST -H "Content-type: application/json" \
+                --data '{"text":"Frontend pipeline failed."}' \
+                "$SLACK_URL"
+            '''
+          }
+        }
+      }
     }
   }
 }

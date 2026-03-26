@@ -20,9 +20,10 @@ pipeline {
                     NODE_HOME="${NROOT}/node-v${NODE_VERSION}-linux-x64"
                     mkdir -p "${NROOT}"
                     if [ ! -x "${NODE_HOME}/bin/node" ]; then
-                        curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
-                            -o "/tmp/node-${NODE_VERSION}.tar.xz"
-                        tar -xJf "/tmp/node-${NODE_VERSION}.tar.xz" -C "${NROOT}"
+                        # .tar.gz uses gzip (usually present); .tar.xz needs xz, often missing on slim Jenkins images.
+                        curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" \
+                            -o "/tmp/node-${NODE_VERSION}.tar.gz"
+                        tar -xzf "/tmp/node-${NODE_VERSION}.tar.gz" -C "${NROOT}"
                     fi
                     echo "export NODE_HOME=\"${NODE_HOME}\"" > "${WORKSPACE}/.jenkins-node-env"
                     echo "export PATH=\"${NODE_HOME}/bin:\$PATH\"" >> "${WORKSPACE}/.jenkins-node-env"

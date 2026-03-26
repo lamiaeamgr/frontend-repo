@@ -62,6 +62,24 @@ pipeline {
             }
         }
 
+        // Uses Jenkins → Configure System → SonarQube servers (name must be "sonarqube").
+        // withSonarQubeEnv injects SONAR_HOST_URL and auth for sonar-scanner.
+        // Manage Jenkins → Tools → SonarQube Scanner: add an installation named "SonarQubeScanner" (or change the tool name below).
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    script {
+                        def scannerHome = tool 'SonarQubeScanner'
+                        sh """
+                            set -eux
+                            . "\${WORKSPACE}/.jenkins-node-env"
+                            "${scannerHome}/bin/sonar-scanner"
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Docker Build & Run') {
             steps {
                 script {

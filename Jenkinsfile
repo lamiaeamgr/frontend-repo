@@ -6,6 +6,8 @@ pipeline {
         CONTAINER_NAME = 'frontend-repo-container'
         // Used only if the agent has no system Node — Linux x64 tarball (matches typical Jenkins-in-Docker).
         NODE_VERSION = '20.18.1'
+        // Must match Manage Jenkins → SonarQube servers → Name (case-sensitive). Change to your exact name, often "SonarQube".
+        SONARQUBE_SERVER_NAME = 'SonarQube'
     }
 
     stages {
@@ -62,18 +64,26 @@ pipeline {
             }
         }
 
-        // Uses Jenkins → Configure System → SonarQube servers (name must be "sonarqube").
-        // withSonarQubeEnv injects SONAR_HOST_URL and auth for sonar-scanner.
-        // Manage Jenkins → Tools → SonarQube Scanner: add an installation named "SonarQubeScanner" (or change the tool name below).
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube') {
+                withSonarQubeEnv("${env.SONARQUBE_SERVER_NAME}") {
                     script {
-                        def scannerHome = tool 'SonarQubeScanner'
+                        def scannerCmd
+                        try {
+                            def scannerHome = tool 'SonarQubeScanner'
+                            scannerCmd = "${scannerHome}/bin/sonar-scanner"
+                        } catch (Throwable ignored) {
+                            echo 'SonarQubeScanner tool not defined in Jenkins; trying sonar-scanner on PATH.'
+                            def rc = sh(script: 'command -v sonar-scanner >/dev/null 2>&1', returnStatus: true)
+                            if (rc != 0) {
+                                error '''Sonar scanner missing. Add Manage Jenkins → Tools → SonarQube Scanner (Name: SonarQubeScanner), or install sonar-scanner on the agent.'''
+                            }
+                            scannerCmd = 'sonar-scanner'
+                        }
                         sh """
                             set -eux
                             . "\${WORKSPACE}/.jenkins-node-env"
-                            "${scannerHome}/bin/sonar-scanner"
+                            "${scannerCmd}"
                         """
                     }
                 }
